@@ -8,6 +8,7 @@ class DietPlanGenerateRequest(BaseModel):
     goal: Optional[str] = None  # e.g. "diabetes-friendly", "low-sodium", "weight-loss"
     days: int = 7
     extra_notes: Optional[str] = None
+    language: str = "en"  # "en" or "hi"
 
 
 class DietPlanOut(BaseModel):

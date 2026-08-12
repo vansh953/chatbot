@@ -1,7 +1,7 @@
 import os
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -21,6 +21,7 @@ ALLOWED_TYPES = {"application/pdf", "image/png", "image/jpeg", "image/jpg", "tex
 @router.post("/upload", response_model=ReportDetailOut)
 async def upload_report(
     file: UploadFile = File(...),
+    language: str = Form("en"),  # "en" or "hi" — language of the AI summary
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -46,7 +47,7 @@ async def upload_report(
     summary = None
     if extracted.strip():
         try:
-            summary = summarize_report(extracted)
+            summary = summarize_report(extracted, language=language)
         except Exception as e:
             summary = f"(AI summary unavailable: {e})"
     else:
@@ -77,6 +78,37 @@ def list_reports(db: Session = Depends(get_db), current_user: User = Depends(get
         .order_by(Report.uploaded_at.desc())
         .all()
     )
+
+
+@router.post("/{report_id}/resummarize", response_model=ReportDetailOut)
+def resummarize_report(
+    report_id: int,
+    language: str = "en",
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Regenerate the AI summary for an already-uploaded report in a different
+    language, without re-uploading the file. Handy for an English/Hindi toggle."""
+    report = (
+        db.query(Report)
+        .filter(Report.id == report_id, Report.user_id == current_user.id)
+        .first()
+    )
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+    if not report.extracted_text or not report.extracted_text.strip():
+        raise HTTPException(
+            status_code=400, detail="No extracted text available to summarize for this report"
+        )
+
+    try:
+        report.ai_summary = summarize_report(report.extracted_text, language=language)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Failed to generate summary: {e}")
+
+    db.commit()
+    db.refresh(report)
+    return report
 
 
 @router.get("/{report_id}", response_model=ReportDetailOut)

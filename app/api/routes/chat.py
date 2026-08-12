@@ -39,7 +39,11 @@ def send_message(
     recent = list(reversed(recent))
     llm_messages = [{"role": m.role, "content": m.content} for m in recent]
 
-    reply_text = chat_completion(llm_messages, user_context=build_user_context(current_user))
+    reply_text = chat_completion(
+        llm_messages,
+        user_context=build_user_context(current_user),
+        language=payload.language,
+    )
 
     assistant_msg = ChatMessage(user_id=current_user.id, role="assistant", content=reply_text)
     db.add(assistant_msg)

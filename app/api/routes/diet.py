@@ -39,6 +39,7 @@ def create_diet_plan(
             goal=goal,
             days=payload.days,
             extra_notes=payload.extra_notes or "",
+            language=payload.language,
         )
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Failed to generate diet plan: {e}")

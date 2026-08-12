@@ -31,6 +31,25 @@ HEALTH_DISCLAIMER = (
 )
 
 
+LANGUAGE_NAMES = {
+    "en": "English",
+    "hi": "Hindi",
+}
+
+
+def language_instruction(language: str) -> str:
+    """Returns an instruction telling the model which language to reply in.
+    Defaults to English for any unrecognized code."""
+    name = LANGUAGE_NAMES.get(language, "English")
+    if name == "Hindi":
+        return (
+            "Respond entirely in Hindi (Devanagari script). Keep medical/food terms "
+            "understandable — you may add the common English term in parentheses the "
+            "first time a technical term appears, e.g. \u0930\u0915\u094d\u0924\u091a\u093e\u092a (blood pressure)."
+        )
+    return "Respond in clear, simple English."
+
+
 def build_user_context(user) -> str:
     parts = []
     if user.age:
@@ -52,10 +71,10 @@ def build_user_context(user) -> str:
     return "; ".join(parts) if parts else "No profile details on file."
 
 
-def chat_completion(messages: list[dict], user_context: str = "") -> str:
+def chat_completion(messages: list[dict], user_context: str = "", language: str = "en") -> str:
     """messages: list of {"role": "user"|"assistant", "content": str}"""
     client = get_client()
-    system_prompt = HEALTH_DISCLAIMER
+    system_prompt = HEALTH_DISCLAIMER + "\n\n" + language_instruction(language)
     if user_context:
         system_prompt += f"\n\nKnown user profile: {user_context}"
 
@@ -68,7 +87,7 @@ def chat_completion(messages: list[dict], user_context: str = "") -> str:
     return completion.choices[0].message.content
 
 
-def summarize_report(extracted_text: str) -> str:
+def summarize_report(extracted_text: str, language: str = "en") -> str:
     client = get_client()
     prompt = (
         "Summarize the following medical report for a non-medical patient in plain language. "
@@ -79,7 +98,7 @@ def summarize_report(extracted_text: str) -> str:
     completion = client.chat.completions.create(
         model=settings.GROQ_MODEL,
         messages=[
-            {"role": "system", "content": HEALTH_DISCLAIMER},
+            {"role": "system", "content": HEALTH_DISCLAIMER + "\n\n" + language_instruction(language)},
             {"role": "user", "content": prompt},
         ],
         temperature=0.3,
@@ -88,13 +107,22 @@ def summarize_report(extracted_text: str) -> str:
     return completion.choices[0].message.content
 
 
-def generate_diet_plan(user_context: str, goal: str, days: int, extra_notes: str = "") -> dict:
+def generate_diet_plan(
+    user_context: str, goal: str, days: int, extra_notes: str = "", language: str = "en"
+) -> dict:
     client = get_client()
+    lang_note = (
+        "Write all text values (goal, meal items, notes, general_tips) in Hindi (Devanagari "
+        "script), but keep the JSON keys themselves in English exactly as shown below."
+        if language == "hi"
+        else "Write all text values in clear, simple English."
+    )
     prompt = f"""
 Create a {days}-day diet plan as STRICT JSON only (no markdown, no commentary, no code fences).
 User profile: {user_context}
 Goal: {goal or "general balanced health"}
 Extra notes: {extra_notes or "none"}
+Language: {lang_note}
 
 Return JSON matching exactly this shape:
 {{
