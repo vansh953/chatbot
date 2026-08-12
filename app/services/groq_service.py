@@ -118,7 +118,7 @@ def generate_diet_plan(
         else "Write all text values in clear, simple English."
     )
     prompt = f"""
-Create a {days}-day diet plan as STRICT JSON only (no markdown, no commentary, no code fences).
+Create a {days}-day daily routine plan as STRICT JSON only (no markdown, no commentary, no code fences).
 User profile: {user_context}
 Goal: {goal or "general balanced health"}
 Extra notes: {extra_notes or "none"}
@@ -130,18 +130,27 @@ Return JSON matching exactly this shape:
   "days": [
     {{
       "day": "Day 1",
+      "wake_time": "07:00 AM",
+      "sleep_time": "10:30 PM",
+      "sleep_notes": "e.g. aim for 7-8 hours, wind down screen-free 30 min before bed",
       "meals": [
-        {{"meal": "Breakfast", "items": ["..."], "notes": "..."}},
-        {{"meal": "Lunch", "items": ["..."], "notes": "..."}},
-        {{"meal": "Dinner", "items": ["..."], "notes": "..."}},
-        {{"meal": "Snacks", "items": ["..."], "notes": "..."}}
-      ]
+        {{"meal": "Breakfast", "time": "08:00 AM", "items": ["..."], "notes": "..."}},
+        {{"meal": "Mid-morning snack", "time": "10:30 AM", "items": ["..."], "notes": "..."}},
+        {{"meal": "Lunch", "time": "01:00 PM", "items": ["..."], "notes": "..."}},
+        {{"meal": "Evening snack", "time": "05:00 PM", "items": ["..."], "notes": "..."}},
+        {{"meal": "Dinner", "time": "08:00 PM", "items": ["..."], "notes": "..."}}
+      ],
+      "water_intake_liters": 2.5,
+      "activity": "e.g. 30 min brisk walk after dinner"
     }}
   ],
   "general_tips": ["..."]
 }}
 
-If the user has diabetes, favor low glycemic-index foods and consistent carb timing.
+Populate wake_time and sleep_time with a sensible consistent daily routine appropriate for the
+user's profile (earlier wake/sleep if they have diabetes or hypertension, since consistent sleep
+timing helps both). Space meals realistically across the day between wake_time and sleep_time.
+If the user has diabetes, favor low glycemic-index foods and consistent carb timing meal-to-meal.
 If the user has hypertension, favor low-sodium options.
 """
     completion = client.chat.completions.create(
@@ -151,7 +160,7 @@ If the user has hypertension, favor low-sodium options.
             {"role": "user", "content": prompt},
         ],
         temperature=0.5,
-        max_tokens=3000,
+        max_tokens=4000,
         response_format={"type": "json_object"},
     )
     raw = completion.choices[0].message.content

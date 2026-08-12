@@ -78,6 +78,30 @@ def get_plan_history(db: Session = Depends(get_db), current_user: User = Depends
     )
 
 
+@router.delete("/diet/{plan_id}", status_code=204)
+def delete_diet_plan(
+    plan_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
+):
+    plan = (
+        db.query(DietPlan)
+        .filter(DietPlan.id == plan_id, DietPlan.user_id == current_user.id)
+        .first()
+    )
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    db.delete(plan)
+    db.commit()
+
+
+@router.delete("/diet/history/old", status_code=204)
+def clear_old_diet_plans(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Delete every plan except the currently active one — a one-click 'clear old plans'."""
+    db.query(DietPlan).filter(
+        DietPlan.user_id == current_user.id, DietPlan.is_active == False
+    ).delete()
+    db.commit()
+
+
 # ---- Schedule / reminders (medication, meals, vitals checks, exercise) ----
 
 
