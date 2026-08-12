@@ -50,6 +50,14 @@ def language_instruction(language: str) -> str:
     return "Respond in clear, simple English."
 
 
+CONCISENESS_NOTE = (
+    "Keep replies short and conversational — a few sentences or a short bulleted list "
+    "in most cases. Don't pad with restated context, multiple caveats, or long lists "
+    "unless the user's question genuinely needs step-by-step detail or they ask for more. "
+    "One brief, relevant safety reminder is enough; don't repeat it more than once."
+)
+
+
 def build_user_context(user) -> str:
     parts = []
     if user.age:
@@ -74,7 +82,7 @@ def build_user_context(user) -> str:
 def chat_completion(messages: list[dict], user_context: str = "", language: str = "en") -> str:
     """messages: list of {"role": "user"|"assistant", "content": str}"""
     client = get_client()
-    system_prompt = HEALTH_DISCLAIMER + "\n\n" + language_instruction(language)
+    system_prompt = HEALTH_DISCLAIMER + "\n\n" + language_instruction(language) + "\n\n" + CONCISENESS_NOTE
     if user_context:
         system_prompt += f"\n\nKnown user profile: {user_context}"
 
@@ -82,7 +90,7 @@ def chat_completion(messages: list[dict], user_context: str = "", language: str 
         model=settings.GROQ_MODEL,
         messages=[{"role": "system", "content": system_prompt}, *messages],
         temperature=0.4,
-        max_tokens=1024,
+        max_tokens=400,
     )
     return completion.choices[0].message.content
 
@@ -91,9 +99,16 @@ def summarize_report(extracted_text: str, language: str = "en") -> str:
     client = get_client()
     prompt = (
         "Summarize the following medical report for a non-medical patient in plain language. "
-        "Call out any values that are outside normal reference ranges, and note (without "
-        "diagnosing) what they might commonly relate to. End with a reminder to discuss the "
-        "full report with their doctor.\n\nReport text:\n" + extracted_text[:12000]
+        "Structure your response in two clearly labeled parts:\n\n"
+        "1. SUMMARY — Explain what the report covers and call out any values that are outside "
+        "normal reference ranges, noting (without diagnosing) what they might commonly relate to.\n\n"
+        "2. SUGGESTIONS — Give 3-5 general, non-prescriptive lifestyle suggestions relevant to "
+        "these specific results (e.g. diet adjustments, activity, sleep, hydration, follow-up "
+        "timing). These must be general wellness suggestions only, never specific dosages, "
+        "medication changes, or a diagnosis. Frame each as something to discuss with their doctor, "
+        "not a standalone instruction to follow unsupervised.\n\n"
+        "End with a reminder to discuss the full report and these suggestions with their doctor "
+        "before making any changes.\n\nReport text:\n" + extracted_text[:12000]
     )
     completion = client.chat.completions.create(
         model=settings.GROQ_MODEL,
@@ -102,7 +117,7 @@ def summarize_report(extracted_text: str, language: str = "en") -> str:
             {"role": "user", "content": prompt},
         ],
         temperature=0.3,
-        max_tokens=800,
+        max_tokens=1000,
     )
     return completion.choices[0].message.content
 
