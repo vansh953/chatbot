@@ -24,6 +24,8 @@ class User(Base):
     other_conditions = Column(String, nullable=True)  # comma separated free text
     allergies = Column(String, nullable=True)
 
+    avatar_url = Column(String, nullable=True)  # hosted .glb URL from the avatar creator (e.g. Ready Player Me)
+
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     vitals = relationship("VitalReading", back_populates="user", cascade="all, delete-orphan")
