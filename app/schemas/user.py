@@ -25,7 +25,6 @@ class UserProfileUpdate(BaseModel):
     has_hypertension: Optional[bool] = None
     other_conditions: Optional[str] = None
     allergies: Optional[str] = None
-    avatar_url: Optional[str] = None
 
 
 class UserOut(BaseModel):
@@ -40,7 +39,6 @@ class UserOut(BaseModel):
     has_hypertension: bool
     other_conditions: Optional[str] = None
     allergies: Optional[str] = None
-    avatar_url: Optional[str] = None
     created_at: datetime
 
     class Config:
