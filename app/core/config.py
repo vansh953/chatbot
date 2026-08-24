@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str = ""
     GROQ_MODEL: str = "openai/gpt-oss-120b"
 
+    # Google OAuth
+    GOOGLE_CLIENT_ID: str = ""
+
     # CORS - comma separated list of allowed origins
     FRONTEND_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
 
