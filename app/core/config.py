@@ -17,7 +17,7 @@ class Settings(BaseSettings):
 
     # Groq (LLM)
     GROQ_API_KEY: str = ""
-    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+    GROQ_MODEL: str = "openai/gpt-oss-120b"
 
     # CORS - comma separated list of allowed origins
     FRONTEND_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
