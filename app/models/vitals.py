@@ -10,7 +10,7 @@ from app.core.database import Base
 class VitalType(str, enum.Enum):
     blood_pressure = "blood_pressure"
     blood_glucose = "blood_glucose"
-    sleep_hours = "sleep_hours"
+    weight = "weight"
     heart_rate = "heart_rate"
 
 
@@ -22,15 +22,12 @@ class VitalReading(Base):
 
     type = Column(Enum(VitalType), nullable=False)
 
-    # Blood pressure
     systolic = Column(Integer, nullable=True)
     diastolic = Column(Integer, nullable=True)
 
-    # Blood glucose (mg/dL)
     glucose_mg_dl = Column(Float, nullable=True)
-    glucose_context = Column(String, nullable=True)  # fasting / post_meal / random
+    glucose_context = Column(String, nullable=True)
 
-    # Sleep hours / heart rate (bpm) — generic numeric value
     value = Column(Float, nullable=True)
 
     notes = Column(String, nullable=True)

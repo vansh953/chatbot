@@ -45,8 +45,6 @@ def list_vitals(
 
 @router.get("/summary")
 def vitals_summary(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    """Latest reading for each vital type — feeds the dashboard summary cards."""
-
     def latest(vtype: VitalType):
         return (
             db.query(VitalReading)
@@ -57,7 +55,6 @@ def vitals_summary(db: Session = Depends(get_db), current_user: User = Depends(g
 
     bp = latest(VitalType.blood_pressure)
     glucose = latest(VitalType.blood_glucose)
-    sleep = latest(VitalType.sleep_hours)
     hr = latest(VitalType.heart_rate)
 
     return {
@@ -68,10 +65,6 @@ def vitals_summary(db: Session = Depends(get_db), current_user: User = Depends(g
         "glucose": (
             {"value": glucose.glucose_mg_dl, "measured_at": glucose.measured_at}
             if glucose else None
-        ),
-        "sleep_hours": (
-            {"value": sleep.value, "measured_at": sleep.measured_at}
-            if sleep else None
         ),
         "heart_rate": (
             {"value": hr.value, "measured_at": hr.measured_at}
