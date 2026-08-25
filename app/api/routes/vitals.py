@@ -45,31 +45,38 @@ def list_vitals(
 
 @router.get("/summary")
 def vitals_summary(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    """Latest reading + simple average of last 7 for glucose and BP — handy for dashboards
-    and for feeding context into the diet-plan generator."""
-    latest_glucose = (
-        db.query(VitalReading)
-        .filter(VitalReading.user_id == current_user.id, VitalReading.type == VitalType.blood_glucose)
-        .order_by(VitalReading.measured_at.desc())
-        .first()
-    )
-    latest_bp = (
-        db.query(VitalReading)
-        .filter(VitalReading.user_id == current_user.id, VitalReading.type == VitalType.blood_pressure)
-        .order_by(VitalReading.measured_at.desc())
-        .first()
-    )
+    """Latest reading for each vital type — feeds the dashboard summary cards."""
+
+    def latest(vtype: VitalType):
+        return (
+            db.query(VitalReading)
+            .filter(VitalReading.user_id == current_user.id, VitalReading.type == vtype)
+            .order_by(VitalReading.measured_at.desc())
+            .first()
+        )
+
+    bp = latest(VitalType.blood_pressure)
+    glucose = latest(VitalType.blood_glucose)
+    sleep = latest(VitalType.sleep_hours)
+    hr = latest(VitalType.heart_rate)
+
     return {
-        "latest_glucose": {
-            "value": latest_glucose.glucose_mg_dl if latest_glucose else None,
-            "context": latest_glucose.glucose_context if latest_glucose else None,
-            "measured_at": latest_glucose.measured_at if latest_glucose else None,
-        },
-        "latest_blood_pressure": {
-            "systolic": latest_bp.systolic if latest_bp else None,
-            "diastolic": latest_bp.diastolic if latest_bp else None,
-            "measured_at": latest_bp.measured_at if latest_bp else None,
-        },
+        "blood_pressure": (
+            {"systolic": bp.systolic, "diastolic": bp.diastolic, "measured_at": bp.measured_at}
+            if bp else None
+        ),
+        "glucose": (
+            {"value": glucose.glucose_mg_dl, "measured_at": glucose.measured_at}
+            if glucose else None
+        ),
+        "sleep_hours": (
+            {"value": sleep.value, "measured_at": sleep.measured_at}
+            if sleep else None
+        ),
+        "heart_rate": (
+            {"value": hr.value, "measured_at": hr.measured_at}
+            if hr else None
+        ),
     }
 
 
